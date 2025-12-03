@@ -1,0 +1,37 @@
+import jcsp.lang.*;
+import jcsp.util.*;
+
+public class Buffer {
+    private final AltingChannelInt[] slots;
+    private final int size;
+    private int count = 0;
+
+    public Buffer(int size) {
+        this.size = size;
+        this.slots = new AltingChannelInt[size];
+        for (int i = 0; i < size; i++) {
+            slots[i] = Channel.intAlting();
+        }
+    }
+
+    public void put(int item) {
+        int index = count % size;
+        slots[index].write(item);
+        count++;
+    }
+
+    public int get() {
+        int index = (count - 1) % size;
+        int item = slots[index].read();
+        count--;
+        return item;
+    }
+
+    public boolean isFull() {
+        return count >= size;
+    }
+
+    public boolean isEmpty() {
+        return count <= 0;
+    }
+}

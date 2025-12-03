@@ -1,0 +1,55 @@
+<component name="libraryTable">
+  <library name="jcsp-1.1-rc4">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/jcsp-1.1-rc4/jcsp-core-doc" />
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/jcsp-1.1-rc4/jcsp-doc" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/jcsp-1.1-rc4/jcsp-demos/alting" />
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/jcsp-1.1-rc4/jcsp-demos/altingBarriers" />
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/jcsp-1.1-rc4/jcsp-demos/alting/ints" />
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/jcsp-1.1-rc4/jcsp-demos/balls/balls0" />
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/jcsp-1.1-rc4/jcsp-demos/balls/balls1" />
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/jcsp-1.1-rc4/jcsp-demos/balls/balls2" />
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/jcsp-1.1-rc4/jcsp-demos/bounce" />
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/jcsp-1.1-rc4/jcsp-demos/bucket" />
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/jcsp-1.1-rc4/jcsp-demos/call" />
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/jcsp-1.1-rc4/jcsp-demos/commstime" />
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/jcsp-1.1-rc4/jcsp-demos/crew" />
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/jcsp-1.1-rc4/jcsp-demos/doc-ex/jcsp/awt" />
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/jcsp-1.1-rc4/jcsp-demos/doc-ex/jcsp/lang" />
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/jcsp-1.1-rc4/jcsp-demos/doc-ex/jcsp/plugNplay" />
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/jcsp-1.1-rc4/jcsp-demos/doc-ex/jcsp/plugNplay/ints" />
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/jcsp-1.1-rc4/jcsp-demos/doc-ex/jcsp/util" />
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/jcsp-1.1-rc4/jcsp-demos/doc-ex/jcsp/util/ints" />
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/jcsp-1.1-rc4/jcsp-demos/eratosthenes" />
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/jcsp-1.1-rc4/jcsp-demos/fireworks" />
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/jcsp-1.1-rc4/jcsp-demos/flasher" />
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/jcsp-1.1-rc4/jcsp-demos/hamming" />
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/jcsp-1.1-rc4/jcsp-demos/infect" />
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/jcsp-1.1-rc4/jcsp-demos/jcspchat" />
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/jcsp-1.1-rc4/jcsp-demos/mandelbrot" />
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/jcsp-1.1-rc4/jcsp-demos/mandelbrot/net" />
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/jcsp-1.1-rc4/jcsp-demos/matrix" />
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/jcsp-1.1-rc4/jcsp-demos/missionControl" />
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/jcsp-1.1-rc4/jcsp-demos/net2/async" />
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/jcsp-1.1-rc4/jcsp-demos/net2/barriers" />
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/jcsp-1.1-rc4/jcsp-demos/net2/channels" />
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/jcsp-1.1-rc4/jcsp-demos/outputGuards" />
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/jcsp-1.1-rc4/jcsp-demos/philosophers/callChannel" />
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/jcsp-1.1-rc4/jcsp-demos/philosophers/channel" />
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/jcsp-1.1-rc4/jcsp-demos/philosophers/deadlock" />
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/jcsp-1.1-rc4/jcsp-demos/picasso" />
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/jcsp-1.1-rc4/jcsp-demos/plasma" />
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/jcsp-1.1-rc4/jcsp-demos/pong" />
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/jcsp-1.1-rc4/jcsp-demos/raytrace" />
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/jcsp-1.1-rc4/jcsp-demos/splat" />
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/jcsp-1.1-rc4/jcsp-demos/wotNoChickens/callChannel" />
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/jcsp-1.1-rc4/jcsp-demos/wotNoChickens/channel" />
+      <root url="jar://$PROJECT_DIR$/../../../../../../jscp/jcsp-1.1-rc4.jar!/jcsp-1.1-rc4/jcsp-demos/wotNoChickens/starve" />
+    </SOURCES>
+  </library>
+</component>

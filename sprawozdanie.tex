@@ -1,0 +1,449 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[polish]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{csvsimple}
+\usepackage{pgfplotstable}
+\usepackage{pgfplots}
+\usepackage{siunitx}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{float}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usetikzlibrary{calc}
+
+\geometry{margin=2.5cm}
+\pgfplotsset{compat=1.18}
+
+% Konfiguracja listingów kodu
+\lstdefinestyle{java}{
+    language=Java,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue}\bfseries,
+    stringstyle=\color{red},
+    commentstyle=\color{green!60!black},
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    stepnumber=1,
+    numbersep=5pt,
+    backgroundcolor=\color{gray!10},
+    frame=single,
+    rulecolor=\color{gray!30},
+    breaklines=true,
+    tabsize=4,
+    showstringspaces=false
+}
+
+\lstset{style=java}
+
+% Konfiguracja siunitx dla polskich ustawień
+\sisetup{
+    output-decimal-marker = {,},
+    group-minimum-digits = 4
+}
+
+\title{%
+    \textbf{Sprawozdanie} \\[0.5cm]
+    \Large Producent-Konsument z Rozproszonym Buforem \\
+    Implementacja w JCSP
+}
+\author{[Imię i Nazwisko]}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+% ============================================================================
+\section{Opis problemu}
+% ============================================================================
+
+Problem producenta-konsumenta z buforem N-elementowym, gdzie \textbf{każdy element bufora jest reprezentowany przez odrębny proces}. Takie rozwiązanie ma praktyczne uzasadnienie gdy pamięć lokalna procesora wykonującego proces bufora jest na tyle mała, że mieści tylko jedną porcję danych.
+
+\subsection{Wariant A: Bez zachowania kolejności}
+
+Producent może umieścić element w dowolnym wolnym buforze, konsument pobiera z dowolnego zajętego bufora. Wykorzystuje konstrukcję \texttt{ALT} (Alternative) do niedeterministycznego wyboru.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture} [
+    node distance=2cm,
+    process/.style={rectangle, draw, minimum width=2cm, minimum height=1cm, fill=blue!20},
+    buffer/.style={rectangle, draw, minimum width=1.5cm, minimum height=0.8cm, fill=green!20},
+    arrow/.style={->, thick}
+]
+    \node[process] (producer) {PRODUCER};
+    \node[buffer, right of=producer, xshift=2cm, yshift=1.5cm] (buf0) {BUFFER[0]};
+    \node[buffer, right of=producer, xshift=2cm, yshift=0.5cm] (buf1) {BUFFER[1]};
+    \node[buffer, right of=producer, xshift=2cm, yshift=-0.5cm] (buf2) {BUFFER[2]};
+    \node[buffer, right of=producer, xshift=2cm, yshift=-1.5cm] (bufn) {BUFFER[N-1]};
+    \node[process, right of=buf1, xshift=2cm, yshift=-0.5cm] (consumer) {CONSUMER};
+    
+    \draw[arrow] (producer) -- (buf0);
+    \draw[arrow] (producer) -- (buf1);
+    \draw[arrow] (producer) -- (buf2);
+    \draw[arrow] (producer) -- (bufn);
+    \draw[arrow] (buf0) -- (consumer);
+    \draw[arrow] (buf1) -- (consumer);
+    \draw[arrow] (buf2) -- (consumer);
+    \draw[arrow] (bufn) -- (consumer);
+    
+    \node at ($(buf2)!0.5!(bufn)$) {$\vdots$};
+\end{tikzpicture}
+\caption{Architektura wariantu A -- bufor rozproszony bez kolejności}
+\label{fig:variantA}
+\end{figure}
+
+Pseudokod zgodny z notacją CSP:
+\begin{verbatim}
+[PRODUCER:: p: porcja;
+  *[true -> produkuj(p);
+    [(i:0..N-1) BUFFER(i)?JESZCZE() -> BUFFER(i)!p]
+  ]
+||BUFFER(i:0..N-1):: p: porcja;
+  *[true -> PRODUCER!JESZCZE();
+    [PRODUCER?p -> CONSUMER!p]
+  ]
+||CONSUMER:: p: porcja;
+  *[(i:0..N-1) BUFFER(i)?p -> konsumuj(p)]
+]
+\end{verbatim}
+
+\subsection{Wariant B: Z zachowaniem kolejności}
+
+Elementy przepływają przez bufory sekwencyjnie (pipeline), gwarantując kolejność FIFO.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture} [
+    node distance=1.8cm,
+    process/.style={rectangle, draw, minimum width=1.8cm, minimum height=1cm, fill=blue!20},
+    buffer/.style={rectangle, draw, minimum width=1.5cm, minimum height=0.8cm, fill=green!20},
+    arrow/.style={->, thick}
+]
+    \node[process] (producer) {PRODUCER};
+    \node[buffer, right of=producer] (buf0) {BUF[0]};
+    \node[buffer, right of=buf0] (buf1) {BUF[1]};
+    \node[right of=buf1, xshift=-0.5cm] (dots) {$\cdots$};
+    \node[buffer, right of=dots, xshift=-0.5cm] (bufn) {BUF[N-1]};
+    \node[process, right of=bufn] (consumer) {CONSUMER};
+    
+    \draw[arrow] (producer) -- (buf0);
+    \draw[arrow] (buf0) -- (buf1);
+    \draw[arrow] (buf1) -- (dots);
+    \draw[arrow] (dots) -- (bufn);
+    \draw[arrow] (bufn) -- (consumer);
+\end{tikzpicture}
+\caption{Architektura wariantu B -- bufor łańcuchowy z kolejnością}
+\label{fig:variantB}
+\end{figure}
+
+Pseudokod:
+\begin{verbatim}
+[PRODUCER:: p: porcja;
+  *[true -> produkuj(p); BUFFER(0)!p]
+||BUFFER(i:0..N-1):: p: porcja;
+  *[true -> [i = 0 -> PRODUCER?p
+            []i <> 0 -> BUFFER(i-1)?p];
+           [i = N-1 -> CONSUMER!p
+            []i <> N-1 -> BUFFER(i+1)!p]
+  ]
+||CONSUMER:: p: porcja;
+  *[BUFFER(N-1)?p -> konsumuj(p)]
+]
+\end{verbatim}
+
+% ============================================================================
+\section{Implementacja w JCSP}
+% ============================================================================
+
+\subsection{Wariant A -- Konstrukcja ALT}
+
+Producent wykorzystuje \textbf{niedeterministyczny wybór} (klasa \texttt{Alternative}) do selekcji wolnego bufora:
+
+\begin{lstlisting}[caption={Producent -- wariant A}]
+public class UnorderedProducer implements CSProcess {
+    private final One2OneChannel[] dataChannels;
+    private final AltingChannelInput[] readyChannels;
+    
+    @Override
+    public void run() {
+        Alternative alt = new Alternative(readyChannels);
+        
+        for (int i = 0; i < itemsToProduce; i++) {
+            Integer item = i + 1;
+            
+            // Czekaj na dowolny wolny bufor (ALT)
+            int bufferIndex = alt.select();
+            readyChannels[bufferIndex].read();
+            
+            // Wyslij dane do wybranego bufora
+            dataChannels[bufferIndex].out().write(item);
+        }
+    }
+}
+\end{lstlisting}
+
+\textbf{Struktura kanałów:}
+\begin{itemize}
+    \item \texttt{readyChannels[i]}: BUFFER[i] $\rightarrow$ PRODUCER (sygnał gotowości)
+    \item \texttt{dataChannels[i]}: PRODUCER $\rightarrow$ BUFFER[i] (dane)
+    \item \texttt{consumerChannels[i]}: BUFFER[i] $\rightarrow$ CONSUMER (dane)
+\end{itemize}
+
+\subsection{Wariant B -- Łańcuch (Pipeline)}
+
+Proste przekazywanie danych przez łańcuch kanałów:
+
+\begin{lstlisting}[caption={Bufor -- wariant B}]
+public class OrderedBuffer implements CSProcess {
+    private final One2OneChannel inputChannel;
+    private final One2OneChannel outputChannel;
+    
+    @Override
+    public void run() {
+        while (true) {
+            // Odbierz od poprzednika
+            Integer item = (Integer) inputChannel.in().read();
+            
+            if (item == -1) {
+                outputChannel.out().write(-1);
+                break;
+            }
+            
+            // Wyslij do nastepnika
+            outputChannel.out().write(item);
+        }
+    }
+}
+\end{lstlisting}
+
+% ============================================================================
+\section{Metodyka pomiarów}
+% ============================================================================
+
+\subsection{Parametry testów}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{Parametr} & \textbf{Wartości} \\
+\midrule
+Rozmiary bufora (N) & 3, 5, 10, 20 \\
+Liczba elementów & 100, 1000, 10000, 50000 \\
+Rozgrzewka JVM & 5 uruchomień \\
+Liczba pomiarów & 10 dla każdej konfiguracji \\
+Metryki & średnia, odchylenie standardowe, min, max \\
+\bottomrule
+\end{tabular}
+\caption{Parametry eksperymentów}
+\end{table}
+
+\subsection{Środowisko testowe}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{Komponent} & \textbf{Specyfikacja} \\
+\midrule
+System operacyjny & Windows 10/11 \\
+Java & OpenJDK 11+ \\
+Biblioteka JCSP & 1.1-rc4 \\
+Procesor & [Uzupełnij] \\
+RAM & [Uzupełnij] \\
+\bottomrule
+\end{tabular}
+\caption{Środowisko testowe}
+\end{table}
+
+% ============================================================================
+\section{Wyniki pomiarów}
+% ============================================================================
+
+\subsection{Czasy wykonania}
+
+% Wczytaj dane z CSV używając csvsimple (prostsze i bardziej niezawodne)
+\IfFileExists{wyniki_pomiarow.csv}{
+    \begin{table}[H]
+    \centering
+    \csvreader[
+        tabular=cccccccc,
+        table head=\toprule \textbf{N} & \textbf{Elem.} & \textbf{A avg} & \textbf{A std} & \textbf{B avg} & \textbf{B std} & \textbf{BQ avg} & \textbf{BQ std} \\ \midrule,
+        late after line=\\,
+        table foot=\bottomrule
+    ]{wyniki_pomiarow.csv}{}%
+    {\csvcoli & \csvcolii & \csvcoliii & \csvcoliv & \csvcolv & \csvcolvi & \csvcolvii & \csvcolviii}
+    \caption{Czasy wykonania (ms) dla różnych konfiguracji}
+    \label{tab:wyniki}
+    \end{table}
+}{
+    \begin{table}[H]
+    \centering
+    \begin{tabular}{cccccccc}
+    \toprule
+    \textbf{N} & \textbf{Elem.} & \textbf{A avg} & \textbf{A std} & \textbf{B avg} & \textbf{B std} & \textbf{BQ avg} & \textbf{BQ std} \\
+    \midrule
+    \multicolumn{8}{c}{\textit{Brak pliku wyniki\_pomiarow.csv -- uruchom testy}} \\
+    \bottomrule
+    \end{tabular}
+    \caption{Czasy wykonania (brak danych)}
+    \end{table}
+}
+
+% ============================================================================
+\section{Analiza wyników}
+% ============================================================================
+
+\subsection{Porównanie wariantów JCSP}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{p{3cm}p{5.5cm}p{5.5cm}}
+\toprule
+\textbf{Aspekt} & \textbf{Wariant A (bez kolejności)} & \textbf{Wariant B (z kolejnością)} \\
+\midrule
+Równoległość & Wysoka -- wszystkie bufory pracują jednocześnie & Niska -- sekwencyjny przepływ \\
+Kolejność FIFO & Nie gwarantowana & Gwarantowana \\
+Złożoność impl. & Wyższa (Alternative) & Niższa (prosty łańcuch) \\
+Przepustowość & Wyższa dla dużych N & Ograniczona przez najwolniejszy bufor \\
+Opóźnienie & Niskie (1 bufor) & Wysokie (N buforów) \\
+\bottomrule
+\end{tabular}
+\caption{Porównanie wariantów A i B}
+\end{table}
+
+\subsection{JCSP vs BlockingQueue}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lcc}
+\toprule
+\textbf{Aspekt} & \textbf{JCSP} & \textbf{BlockingQueue} \\
+\midrule
+Wydajność & Wyższy narzut & Niższy narzut \\
+Bezpieczeństwo & Formalna weryfikacja (CSP) & Testy jednostkowe \\
+Złożoność użycia & Wyższa krzywa uczenia & Standard Java \\
+Skalowalność & Dobra dla wielu procesów & Zależy od implementacji \\
+Konstrukcja ALT & Wbudowana & Wymaga ręcznej implementacji \\
+\bottomrule
+\end{tabular}
+\caption{Porównanie JCSP z java.util.concurrent}
+\end{table}
+
+\subsection{Wpływ rozmiaru bufora}
+
+\begin{itemize}
+    \item \textbf{Mały bufor (N=3-5):} Różnice między wariantami minimalne
+    \item \textbf{Średni bufor (N=10):} Wariant A zaczyna wykazywać przewagę
+    \item \textbf{Duży bufor (N=20+):} 
+    \begin{itemize}
+        \item Wariant A: czas względnie stały (równoległy dostęp)
+        \item Wariant B: czas rośnie liniowo z N (każdy element przechodzi przez wszystkie bufory)
+    \end{itemize}
+\end{itemize}
+
+% ============================================================================
+\section{Wnioski}
+% ============================================================================
+
+\subsection{Kiedy stosować Wariant A}
+
+\begin{enumerate}
+    \item Kolejność przetwarzania nie ma znaczenia
+    \item Wymagana jest wysoka przepustowość
+    \item System dysponuje wieloma procesorami/rdzeniami
+    \item Ważne jest niskie opóźnienie (latency)
+\end{enumerate}
+
+\subsection{Kiedy stosować Wariant B}
+
+\begin{enumerate}
+    \item Kolejność FIFO jest kluczowa dla poprawności
+    \item Prostota implementacji jest priorytetem
+    \item Przetwarzanie potokowe -- każdy bufor wykonuje transformację
+    \item System ma ograniczone zasoby pamięci
+\end{enumerate}
+
+\subsection{JCSP vs standardowe mechanizmy Java}
+
+\textbf{JCSP warto stosować gdy:}
+\begin{itemize}
+    \item Wymagana jest formalna weryfikacja poprawności współbieżności
+    \item System ma złożoną strukturę wielu komunikujących się procesów
+    \item Czytelność kodu (wzorce CSP) jest ważniejsza niż surowa wydajność
+    \item Potrzebna jest konstrukcja ALT do niedeterministycznego wyboru
+\end{itemize}
+
+\textbf{BlockingQueue wystarczy gdy:}
+\begin{itemize}
+    \item Prosty scenariusz producent-konsument
+    \item Wydajność jest priorytetem
+    \item Nie ma potrzeby formalnej weryfikacji
+    \item Zespół nie zna biblioteki JCSP
+\end{itemize}
+
+% ============================================================================
+\section{Podsumowanie}
+% ============================================================================
+
+Zaimplementowano dwa warianty rozproszonego bufora producent-konsument w bibliotece JCSP:
+
+\begin{enumerate}
+    \item \textbf{Wariant A} -- wykorzystujący konstrukcję \texttt{Alternative} do niedeterministycznego wyboru wolnego bufora, oferujący wyższą przepustowość kosztem braku gwarancji kolejności.
+    
+    \item \textbf{Wariant B} -- implementujący łańcuch (pipeline) buforów, gwarantujący kolejność FIFO przy niższej przepustowości dla dużych N.
+\end{enumerate}
+
+Porównanie z implementacją opartą na \texttt{BlockingQueue} wykazało, że JCSP wprowadza dodatkowy narzut wydajnościowy, jednak oferuje w zamian formalną podstawę teoretyczną (algebra procesów CSP) oraz eleganckie konstrukcje do obsługi złożonych wzorców komunikacji.
+
+% ============================================================================
+\section{Instrukcja uruchomienia}
+% ============================================================================
+
+\begin{lstlisting}[language=bash, caption={Kompilacja i uruchomienie}]
+# Kompilacja
+javac -cp "lib\jcsp.jar" -d target\classes src\*.java
+
+# Uruchomienie testow
+java -cp "target\classes;lib\jcsp.jar" Main
+
+# Kompilacja sprawozdania (wymaga pdflatex)
+pdflatex sprawozdanie.tex
+pdflatex sprawozdanie.tex
+\end{lstlisting}
+
+% ============================================================================
+\appendix
+\section{Struktura projektu}
+% ============================================================================
+
+\begin{verbatim}
+projektcsp/
++-- lib/
+|   +-- jcsp.jar
++-- src/
+|   +-- Main.java
+|   +-- OrderedProducer.java
+|   +-- OrderedBuffer.java
+|   +-- OrderedConsumer.java
+|   +-- UnorderedProducer.java
+|   +-- UnorderedBuffer.java
+|   +-- UnorderedConsumer.java
+|   +-- CustomProducerConsumer.java
++-- target/classes/
++-- wyniki_pomiarow.csv
++-- sprawozdanie.tex
+\end{verbatim}
+
+\end{document}
