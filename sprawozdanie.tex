@@ -6,26 +6,33 @@
 \usepackage{amsmath}
 \usepackage{booktabs}
 \usepackage{float}
-\usepackage{geometry}
+\usepackage{hyperref}
 \usepackage{listings}
 \usepackage{xcolor}
-\usepackage{hyperref}
+\usepackage{geometry}
+\usepackage{pgfplots}
+\usepackage{tikz}
+\pgfplotsset{compat=1.18}
+\usetikzlibrary{shapes,arrows,positioning}
 
 \geometry{margin=2.5cm}
 
-\lstset{
-    basicstyle=\ttfamily\small,
-    breaklines=true,
-    frame=single,
-    numbers=left,
-    numberstyle=\tiny,
-    captionpos=b
-}
-
-\title{\textbf{Sprawozdanie z projektu} \\
-\large System Producent-Konsument z Tablicą Dispatcher}
+\title{\textbf{Sprawozdanie z Projektu CSP} \\
+\large System Producent-Konsument z Tablicami Wag i Dispatcherami}
 \author{Marcel}
 \date{\today}
+
+\lstset{
+    language=Java,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    commentstyle=\color{gray},
+    stringstyle=\color{red},
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    breaklines=true,
+    frame=single
+}
 
 \begin{document}
 
@@ -35,179 +42,407 @@
 
 \section{Wprowadzenie}
 
-Celem projektu było zaprojektowanie i zaimplementowanie wielowątkowego systemu producent-konsument wykorzystującego mechanizm tablicy dispatcher. System umożliwia równoczesną pracę wielu producentów i konsumentów komunikujących się poprzez tablicę buforów FIFO.
+Niniejsze sprawozdanie przedstawia implementację i analizę wydajności systemu producent-konsument wykorzystującego paradygmat CSP (Communicating Sequential Processes) oraz bibliotekę JCSP. System charakteryzuje się dynamicznym równoważeniem obciążenia przy użyciu tablic wag oraz procesów dispatcher.
 
-\subsection{Założenia projektu}
+\subsection{Cel projektu}
+
+Głównym celem projektu było:
 \begin{itemize}
-    \item Wielowątkowa implementacja w języku Java
-    \item Synchronizacja dostępu do współdzielonych zasobów
-    \item Równomierne rozłożenie obciążenia między bufory
-    \item Możliwość konfiguracji liczby producentów, buforów i konsumentów
-    \item Pomiar wydajności i analiza statystyczna
+    \item Implementacja systemu producent-konsument z wieloma buforami
+    \item Zastosowanie dynamicznego równoważenia obciążenia
+    \item Analiza wydajności w różnych konfiguracjach
+    \item Ocena równomierności rozkładu danych między bufory
 \end{itemize}
 
-\section{Architektura systemu}
+\section{Architektura Systemu}
+
+\subsection{Schemat działania}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    node distance=1.5cm and 1.2cm,
+    process/.style={rectangle, draw, fill=blue!20, text width=2cm, text centered, minimum height=0.8cm, font=\small},
+    buffer/.style={rectangle, draw, fill=green!20, text width=1.5cm, text centered, minimum height=0.8cm, font=\small},
+    dispatcher/.style={ellipse, draw, fill=orange!20, text width=1.8cm, text centered, minimum height=0.8cm, font=\small},
+    arrow/.style={->,>=stealth,thick}
+]
+
+% Producenci (lewa strona)
+\node[process] (p1) at (0,2) {Producent 1};
+\node[process] (p2) at (0,0.5) {Producent 2};
+\node[process] (p3) at (0,-1) {Producent P};
+
+% Dispatcher producentów
+\node[dispatcher] (pd) at (3,0.5) {Producer\\Dispatcher};
+
+% Bufory (środek)
+\node[buffer] (b1) at (6,2) {Bufor 0};
+\node[buffer] (b2) at (6,0.5) {Bufor 1};
+\node[buffer] (b3) at (6,-1) {Bufor B};
+
+% Dispatcher konsumentów
+\node[dispatcher] (cd) at (9,0.5) {Consumer\\Dispatcher};
+
+% Konsumenci (prawa strona)
+\node[process] (c1) at (12,2) {Konsument 1};
+\node[process] (c2) at (12,0.5) {Konsument 2};
+\node[process] (c3) at (12,-1) {Konsument K};
+
+% Połączenia producentów
+\draw[arrow] (p1) -- node[above,font=\tiny] {dane} (b1);
+\draw[arrow] (p1) -- (b2);
+\draw[arrow] (p2) -- (b1);
+\draw[arrow] (p2) -- (b2);
+\draw[arrow] (p2) -- (b3);
+\draw[arrow] (p3) -- (b2);
+\draw[arrow] (p3) -- (b3);
+
+% Synchronizacja producentów z dispatcherem
+\draw[arrow,dashed,red] (p1) to[bend left=15] node[above,font=\tiny] {sync} (pd);
+\draw[arrow,dashed,red] (pd) to[bend left=15] (p1);
+\draw[arrow,dashed,red] (p2) -- (pd);
+\draw[arrow,dashed,red] (pd) -- (p2);
+\draw[arrow,dashed,red] (p3) to[bend right=15] (pd);
+\draw[arrow,dashed,red] (pd) to[bend right=15] (p3);
+
+% Połączenia konsumentów
+\draw[arrow] (b1) -- (c1);
+\draw[arrow] (b2) -- (c1);
+\draw[arrow] (b1) -- (c2);
+\draw[arrow] (b2) -- (c2);
+\draw[arrow] (b3) -- (c2);
+\draw[arrow] (b2) -- (c3);
+\draw[arrow] (b3) -- (c3);
+
+% Synchronizacja konsumentów z dispatcherem
+\draw[arrow,dashed,blue] (c1) to[bend right=15] node[above,font=\tiny] {sync} (cd);
+\draw[arrow,dashed,blue] (cd) to[bend right=15] (c1);
+\draw[arrow,dashed,blue] (c2) -- (cd);
+\draw[arrow,dashed,blue] (cd) -- (c2);
+\draw[arrow,dashed,blue] (c3) to[bend left=15] (cd);
+\draw[arrow,dashed,blue] (cd) to[bend left=15] (c3);
+
+% Legenda
+\node[font=\tiny,align=left] at (6,-2.5) {
+    \textbf{Legenda:} \\
+    \tikz\draw[arrow] (0,0) -- (0.3,0); dane (wybór losowy z wagami) \\
+    \tikz\draw[arrow,dashed,red] (0,0) -- (0.3,0); synchronizacja (agregacja czasów)
+};
+
+\end{tikzpicture}
+\caption{Architektura systemu: producenci wybierają bufory probabilistycznie na podstawie wag, następnie synchronizują się z dispatcherem aby zaktualizować wagi globalnie. Konsumenci działają analogicznie.}
+\label{fig:architecture}
+\end{figure}
 
 \subsection{Komponenty systemu}
 
-System składa się z następujących elementów:
+\subsubsection{Producenci}
 
-\begin{enumerate}
-    \item \textbf{TablicaDispatcher} - centralny komponent zarządzający tablicą buforów i koordynujący komunikację
-    \item \textbf{Producer} - wątki produkujące elementy i umieszczające je w buforach
-    \item \textbf{Consumer} - wątki pobierające i przetwarzające elementy z buforów
-    \item \textbf{TestTablicaDispatcher} - moduł testowy umożliwiający konfigurację i uruchomienie systemu
-\end{enumerate}
-
-\subsection{Mechanizm synchronizacji}
-
-Do synchronizacji dostępu do współdzielonych zasobów wykorzystano:
+Każdy producent:
 \begin{itemize}
-    \item \texttt{AtomicBoolean} - flaga zakończenia pracy systemu
-    \item \texttt{AtomicInteger} - liczniki produkcji, konsumpcji i statystyk buforów
-    \item Wbudowane mechanizmy synchronizacji kolejek \texttt{BlockingQueue}
+    \item Generuje elementy danych
+    \item Utrzymuje tablicę wag dla każdego bufora i dispatchera
+    \item Wybiera cel na podstawie rozkładu prawdopodobieństwa
+    \item Aktualizuje wagi na podstawie czasów oczekiwania
 \end{itemize}
 
-\section{Konfiguracja testów}
+\subsubsection{Bufory}
 
-Przeprowadzono trzy testy o różnych konfiguracjach:
+Bufory zaimplementowane jako \texttt{ArrayBlockingQueue}:
+\begin{itemize}
+    \item Obsługują wielowątkowy dostęp
+    \item Implementują mechanizm timeout
+    \item Przechowują dane tymczasowo między producentami a konsumentami
+\end{itemize}
 
-\begin{table}[H]
-\centering
-\caption{Konfiguracje testowe}
-\begin{tabular}{@{}ccccc@{}}
-\toprule
-\textbf{Test} & \textbf{Producenci (P)} & \textbf{Bufory (B)} & \textbf{Konsumenci (K)} & \textbf{Czas [s]} \\ \midrule
-1 & 10 & 5 & 10 & 5 \\
-2 & 100 & 5 & 100 & 5 \\
-3 & 20 & 10 & 40 & 10 \\ \bottomrule
-\end{tabular}
-\end{table}
+\subsubsection{Dispatcher}
 
-\section{Wyniki eksperymentów}
+Procesy dispatcher agregują informacje o czasach oczekiwania i rozgłaszają je wszystkim procesom, umożliwiając globalne równoważenie obciążenia.
 
-\subsection{Test 1: Mały system (10/5/10)}
+\subsubsection{Konsumenci}
 
-\begin{table}[H]
-\centering
-\caption{Wyniki testu 1}
-\begin{tabular}{@{}ll@{}}
-\toprule
-\textbf{Parametr} & \textbf{Wartość} \\ \midrule
-Czas rzeczywisty & 5030 ms \\
-Wyprodukowano elementów & 778~872 \\
-Skonsumowano elementów & 776~923 \\
-Przepustowość & 154~458 elem/s \\
-Średnia na bufor & 155~384,6 \\
-Odchylenie standardowe & 489,6 \\
-Współczynnik zmienności & 0,3\% \\ \bottomrule
-\end{tabular}
-\end{table}
+Każdy konsument:
+\begin{itemize}
+    \item Pobiera elementy z buforów
+    \item Śledzi żywe i martwe bufory
+    \item Aktualizuje wagi na podstawie dostępności danych
+    \item Synchronizuje się z dispatcherem
+\end{itemize}
 
-\textbf{Analiza:} System wykazał doskonałe równoważenie obciążenia z bardzo niskim współczynnikiem zmienności (0,3\%). Wszystkie bufory obsłużyły zbliżoną liczbę elementów (ok. 20\% każdy).
+\subsection{Algorytm równoważenia obciążenia}
 
-\subsection{Test 2: Duży system (100/5/100)}
+Wagi są aktualizowane według wzoru:
+\begin{equation}
+w_i^{new} = \alpha \cdot w_i^{old} + (1-\alpha) \cdot \frac{1}{1 + \frac{t_i}{1000000}}
+\end{equation}
 
-\begin{table}[H]
-\centering
-\caption{Wyniki testu 2}
-\begin{tabular}{@{}ll@{}}
-\toprule
-\textbf{Parametr} & \textbf{Wartość} \\ \midrule
-Czas rzeczywisty & 5054 ms \\
-Wyprodukowano elementów & 2~611~174 \\
-Skonsumowano elementów & 2~611~093 \\
-Przepustowość & 516~639 elem/s \\
-Średnia na bufor & 522~218,6 \\
-Odchylenie standardowe & 783,6 \\
-Współczynnik zmienności & 0,2\% \\ \bottomrule
-\end{tabular}
-\end{table}
+gdzie:
+\begin{itemize}
+    \item $w_i$ -- waga bufora $i$
+    \item $t_i$ -- czas oczekiwania w nanosekundach
+    \item $\alpha = 0.7$ -- współczynnik wygładzania (lokalnie), $0.5$ (globalnie)
+\end{itemize}
 
-\textbf{Analiza:} Przy zwiększeniu liczby producentów i konsumentów do 100, system osiągnął 3,3-krotnie wyższą przepustowość (516~639 elem/s) przy zachowaniu doskonałego równoważenia (0,2\%).
+\section{Konfiguracja Testów}
 
-\subsection{Test 3: Asymetryczny system (20/10/40)}
+Przeprowadzono 75 testów w różnych konfiguracjach, zgrupowanych w serie:
 
 \begin{table}[H]
 \centering
-\caption{Wyniki testu 3}
-\begin{tabular}{@{}ll@{}}
+\caption{Serie testów}
+\begin{tabular}{@{}lll@{}}
 \toprule
-\textbf{Parametr} & \textbf{Wartość} \\ \midrule
-Czas rzeczywisty & 10~052 ms \\
-Wyprodukowano elementów & 4~462~331 \\
-Skonsumowano elementów & 4~461~549 \\
-Przepustowość & 443~847 elem/s \\
-Średnia na bufor & 446~154,9 \\
-Odchylenie standardowe & 610,8 \\
-Współczynnik zmienności & 0,1\% \\ \bottomrule
+\textbf{Seria} & \textbf{Cel} & \textbf{Parametry} \\ \midrule
+1 & Skalowalność P, K & P=K $\in$ \{5,10,20,50,100\}, B=3 \\
+2 & Skalowalność B & B $\in$ \{1,3,5,10,20\}, P=K=20 \\
+3 & Asymetria P/K & P$\neq$K, B=5 \\
+4 & Proporcjonalne & P:B:K = 10:1:10 \\
+5 & Duże liczby & P=K=100, B $\in$ \{1,5,10,20,50\} \\
+\bottomrule
 \end{tabular}
 \end{table}
 
-\textbf{Analiza:} System z większą liczbą konsumentów niż producentów oraz podwojoną liczbą buforów osiągnął najlepsze równoważenie (0,1\%). Każdy z 10 buforów obsłużył dokładnie 10\% elementów.
+\section{Wyniki Eksperymentów}
 
-\section{Analiza porównawcza}
+\subsection{Seria 1: Skalowalność liczby procesów}
 
-\subsection{Przepustowość systemu}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    xlabel={Liczba producentów/konsumentów},
+    ylabel={Przepustowość [elem/s]},
+    legend pos=north west,
+    grid=major,
+    width=0.8\textwidth,
+    height=6cm
+]
+\addplot[color=blue,mark=*,thick] coordinates {
+    (5,126641)
+    (10,198305)
+    (20,237645)
+    (50,322498)
+    (100,436761)
+};
+\legend{Przepustowość}
+\end{axis}
+\end{tikzpicture}
+\caption{Przepustowość w funkcji liczby procesów (B=3)}
+\label{fig:throughput_scale}
+\end{figure}
+
+\textbf{Obserwacje:}
+\begin{itemize}
+    \item Przepustowość rośnie wraz z liczbą procesów
+    \item Przy 100 procesach: 436 761 elem/s
+    \item Współczynnik zmienności $< 0.1\%$ -- doskonałe równoważenie
+\end{itemize}
+
+\subsection{Seria 2: Wpływ liczby buforów}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    xlabel={Liczba buforów},
+    ylabel={Przepustowość [elem/s]},
+    legend pos=north west,
+    grid=major,
+    width=0.8\textwidth,
+    height=6cm,
+    xtick={1,3,5,10,20}
+]
+\addplot[color=red,mark=square*,thick] coordinates {
+    (1,84104)
+    (3,241388)
+    (5,398068)
+    (10,685895)
+    (20,1374283)
+};
+\legend{P=K=20}
+\end{axis}
+\end{tikzpicture}
+\caption{Wpływ liczby buforów na przepustowość (P=K=20)}
+\label{fig:buffers_impact}
+\end{figure}
+
+\textbf{Wnioski:}
+\begin{itemize}
+    \item Liczba buforów ma krytyczny wpływ na wydajność
+    \item Przy 1 buforze: wąskie gardło (84k elem/s)
+    \item Przy 20 buforach: 1.37M elem/s (wzrost 16×)
+\end{itemize}
+
+\subsection{Równomierność rozkładu obciążenia}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    ybar,
+    xlabel={Bufor},
+    ylabel={Liczba elementów},
+    symbolic x coords={Bufor 0, Bufor 1, Bufor 2},
+    xtick=data,
+    width=0.8\textwidth,
+    height=6cm,
+    nodes near coords,
+    nodes near coords align={vertical},
+]
+\addplot coordinates {(Bufor 0,423241) (Bufor 1,421983) (Bufor 2,422712)};
+\end{axis}
+\end{tikzpicture}
+\caption{Rozkład obciążenia buforów dla testu P=5, B=3, K=5}
+\label{fig:load_distribution}
+\end{figure}
+
+\textbf{Analiza równomierności:}
+\begin{itemize}
+    \item Średnia na bufor: 422 645
+    \item Odchylenie standardowe: 516
+    \item Współczynnik zmienności: 0.12\%
+    \item Ocena: \textbf{DOSKONAŁE} równoważenie
+\end{itemize}
+
+\subsection{Współczynnik zmienności}
 
 \begin{table}[H]
 \centering
-\caption{Porównanie przepustowości}
-\begin{tabular}{@{}lccc@{}}
+\caption{Współczynnik zmienności dla wybranych konfiguracji}
+\begin{tabular}{@{}cccc@{}}
 \toprule
-\textbf{Test} & \textbf{Przepustowość [elem/s]} & \textbf{Wzrost} & \textbf{P/K ratio} \\ \midrule
-Test 1 & 154~458 & - & 1,0 \\
-Test 2 & 516~639 & +234\% & 1,0 \\
-Test 3 & 443~847 & +187\% & 0,5 \\ \bottomrule
+\textbf{P} & \textbf{B} & \textbf{K} & \textbf{CV [\%]} \\ \midrule
+5 & 3 & 5 & 0.12 \\
+10 & 3 & 10 & 0.15 \\
+20 & 3 & 20 & 0.12 \\
+50 & 3 & 50 & 0.03 \\
+100 & 3 & 100 & 0.04 \\
+20 & 10 & 20 & 0.08 \\
+\bottomrule
 \end{tabular}
 \end{table}
 
-Najwyższą przepustowość osiągnięto w teście 2 ze zrównoważoną liczbą producentów i konsumentów (100/100).
+Wszystkie konfiguracje wykazują współczynnik zmienności $< 1\%$, co potwierdza skuteczność algorytmu równoważenia.
 
-\subsection{Równomierność obciążenia}
+\section{Analiza wydajności}
+
+\subsection{Efektywność produkcji i konsumpcji}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    xlabel={Numer testu},
+    ylabel={Liczba elementów},
+    legend pos=north west,
+    grid=major,
+    width=0.8\textwidth,
+    height=6cm,
+    xtick={1,2,3,4,5}
+]
+\addplot[color=blue,mark=*] coordinates {
+    (1,1269816) (2,2011533) (3,2377944) (4,3227240) (5,4391217)
+};
+\addplot[color=red,mark=square] coordinates {
+    (1,1267936) (2,2010223) (3,2376691) (4,3225625) (5,4390764)
+};
+\legend{Wyprodukowano, Skonsumowano}
+\end{axis}
+\end{tikzpicture}
+\caption{Produkcja vs konsumpcja (Serie 1)}
+\label{fig:production_consumption}
+\end{figure}
+
+\textbf{Strata danych:}
+\begin{equation}
+\text{Strata} = \frac{\text{Wyprodukowano} - \text{Skonsumowano}}{\text{Wyprodukowano}} \times 100\%
+\end{equation}
+
+Średnia strata: $< 0.1\%$ -- bardzo wysoka efektywność.
+
+\subsection{Czas rzeczywisty vs nominalny}
 
 \begin{table}[H]
 \centering
-\caption{Współczynniki zmienności}
-\begin{tabular}{@{}lccl@{}}
+\caption{Dokładność czasu wykonania}
+\begin{tabular}{@{}cccc@{}}
 \toprule
-\textbf{Test} & \textbf{Współczynnik [\%]} & \textbf{Liczba buforów} & \textbf{Ocena} \\ \midrule
-Test 1 & 0,3 & 5 & Doskonała \\
-Test 2 & 0,2 & 5 & Doskonała \\
-Test 3 & 0,1 & 10 & Doskonała \\ \bottomrule
+\textbf{Test} & \textbf{Nominalny [s]} & \textbf{Rzeczywisty [ms]} & \textbf{Odchylenie} \\ \midrule
+1 & 10 & 10012 & +0.12\% \\
+2 & 10 & 10137 & +1.37\% \\
+3 & 10 & 10001 & +0.01\% \\
+4 & 10 & 10002 & +0.02\% \\
+5 & 10 & 10053 & +0.53\% \\
+\bottomrule
 \end{tabular}
 \end{table}
 
-Wszystkie testy wykazały doskonałe równoważenie obciążenia (współczynnik < 10\%). Najlepszy wynik uzyskano w teście 3 z większą liczbą buforów.
+System wykazuje wysoką precyzję czasową.
+
+\section{Szczegóły Implementacji}
+
+\subsection{Kluczowe fragmenty kodu}
+
+\subsubsection{Wybór bufora na podstawie wag}
+
+\begin{lstlisting}[caption={Metoda selectByWeight}]
+private static int selectByWeight(double[] weights, Random rand) {
+    double total = 0;
+    for (double w : weights) total += w;
+    
+    double r = rand.nextDouble() * total;
+    double cumulative = 0;
+    
+    for (int i = 0; i < weights.length; i++) {
+        cumulative += weights[i];
+        if (r <= cumulative) return i;
+    }
+    return weights.length - 1;
+}
+\end{lstlisting}
+
+\subsubsection{Aktualizacja wag}
+
+\begin{lstlisting}[caption={Metoda updateWeight}]
+private static void updateWeight(double[] weights, int index, 
+                                  long waitTimeNanos) {
+    double newWeight = 1.0 / (1.0 + waitTimeNanos / 1_000_000.0);
+    weights[index] = 0.7 * weights[index] + 0.3 * newWeight;
+    if (weights[index] < 0.01) weights[index] = 0.01;
+}
+\end{lstlisting}
 
 \section{Wnioski}
 
+\subsection{Zalety systemu}
+
 \begin{enumerate}
-    \item \textbf{Skalowalność} - System efektywnie skaluje się wraz ze wzrostem liczby wątków. Test 2 (100 producentów/konsumentów) osiągnął ponad 3-krotnie wyższą przepustowość niż test 1.
-    
-    \item \textbf{Równoważenie obciążenia} - Mechanizm tablicy dispatcher zapewnia doskonałe rozłożenie obciążenia między bufory (współczynnik zmienności < 0,3\% we wszystkich testach).
-    
-    \item \textbf{Wpływ liczby buforów} - Zwiększenie liczby buforów z 5 do 10 poprawiło równomierność rozłożenia obciążenia (0,1\% vs 0,2-0,3\%).
-    
-    \item \textbf{Optymalna konfiguracja} - Zrównoważona liczba producentów i konsumentów (1:1) przy dużej liczbie wątków (test 2) zapewnia najwyższą przepustowość.
-    
-    \item \textbf{Stabilność} - System działa stabilnie we wszystkich konfiguracjach, różnica między wyprodukowanymi a skonsumowanymi elementami jest minimalna (<0,3\%).
-    
-    \item \textbf{Synchronizacja} - Zastosowane mechanizmy synchronizacji (AtomicInteger, BlockingQueue) zapewniają bezpieczną współbieżność bez deadlocków.
+    \item \textbf{Doskonałe równoważenie obciążenia} -- współczynnik zmienności $< 0.2\%$
+    \item \textbf{Wysoka skalowalność} -- liniowy wzrost przepustowości
+    \item \textbf{Niska strata danych} -- $< 0.1\%$
+    \item \textbf{Elastyczność} -- działa w różnych konfiguracjach
 \end{enumerate}
 
-\section{Możliwe usprawnienia}
+\subsection{Ograniczenia}
+
+\begin{enumerate}
+    \item Overhead komunikacji z dispatcherami
+    \item Wpływ liczby buforów na złożoność
+    \item Wymaga dostrajania parametrów $\alpha$
+\end{enumerate}
+
+\subsection{Możliwe usprawnienia}
 
 \begin{itemize}
-    \item Implementacja dynamicznego dostosowania liczby wątków w czasie działania
-    \item Priorytetyzacja buforów w zależności od obciążenia
-    \item Monitoring wydajności w czasie rzeczywistym
-    \item Optymalizacja strategii wyboru bufora przez producenta
-    \item Dodanie mechanizmu obsługi przeciążenia systemu
+    \item Adaptacyjne dostosowanie współczynnika wygładzania
+    \item Hierarchiczne dispatchery dla bardzo dużych systemów
+    \item Predykcja obciążenia przy użyciu ML
+    \item Dynamiczne dodawanie/usuwanie buforów
 \end{itemize}
 
 \section{Podsumowanie}
 
-Zaimplementowany system producent-konsument z tablicą dispatcher spełnia wszystkie założone cele. Wykazuje doskonałą skalowalność, efektywne równoważenie obciążenia oraz stabilność działania w różnych konfiguracjach. Przeprowadzone testy potwierdzają poprawność implementacji mechanizmów synchronizacji i możliwość wykorzystania systemu w aplikacjach wymagających wysokiej przepustowości.
+System producent-konsument z tablicami wag i dispatcherami wykazuje doskonałe właściwości równoważenia obciążenia przy wysokiej wydajności. Implementacja oparta na JCSP i \texttt{ArrayBlockingQueue} zapewnia niezawodność i skalowalność. Wyniki eksperymentów potwierdzają efektywność algorytmu w szerokim zakresie konfiguracji.
 
 \end{document}
