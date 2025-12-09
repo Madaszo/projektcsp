@@ -28,3 +28,35 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+### Java ###
+*.class
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+target/
+*.iml
+.idea/
+
+### LaTeX ###
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+*.toc
+*.bbl
+*.blg
+*.lof
+*.lot
+
+
+### Project specific ###
+config.txt
+wyniki*.txt
+analiza_wynikow.png
+temp_*.txt

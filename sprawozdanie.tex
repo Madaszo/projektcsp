@@ -1,0 +1,213 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[polish]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage{geometry}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+\geometry{margin=2.5cm}
+
+\lstset{
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    frame=single,
+    numbers=left,
+    numberstyle=\tiny,
+    captionpos=b
+}
+
+\title{\textbf{Sprawozdanie z projektu} \\
+\large System Producent-Konsument z Tablicą Dispatcher}
+\author{Marcel}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Wprowadzenie}
+
+Celem projektu było zaprojektowanie i zaimplementowanie wielowątkowego systemu producent-konsument wykorzystującego mechanizm tablicy dispatcher. System umożliwia równoczesną pracę wielu producentów i konsumentów komunikujących się poprzez tablicę buforów FIFO.
+
+\subsection{Założenia projektu}
+\begin{itemize}
+    \item Wielowątkowa implementacja w języku Java
+    \item Synchronizacja dostępu do współdzielonych zasobów
+    \item Równomierne rozłożenie obciążenia między bufory
+    \item Możliwość konfiguracji liczby producentów, buforów i konsumentów
+    \item Pomiar wydajności i analiza statystyczna
+\end{itemize}
+
+\section{Architektura systemu}
+
+\subsection{Komponenty systemu}
+
+System składa się z następujących elementów:
+
+\begin{enumerate}
+    \item \textbf{TablicaDispatcher} - centralny komponent zarządzający tablicą buforów i koordynujący komunikację
+    \item \textbf{Producer} - wątki produkujące elementy i umieszczające je w buforach
+    \item \textbf{Consumer} - wątki pobierające i przetwarzające elementy z buforów
+    \item \textbf{TestTablicaDispatcher} - moduł testowy umożliwiający konfigurację i uruchomienie systemu
+\end{enumerate}
+
+\subsection{Mechanizm synchronizacji}
+
+Do synchronizacji dostępu do współdzielonych zasobów wykorzystano:
+\begin{itemize}
+    \item \texttt{AtomicBoolean} - flaga zakończenia pracy systemu
+    \item \texttt{AtomicInteger} - liczniki produkcji, konsumpcji i statystyk buforów
+    \item Wbudowane mechanizmy synchronizacji kolejek \texttt{BlockingQueue}
+\end{itemize}
+
+\section{Konfiguracja testów}
+
+Przeprowadzono trzy testy o różnych konfiguracjach:
+
+\begin{table}[H]
+\centering
+\caption{Konfiguracje testowe}
+\begin{tabular}{@{}ccccc@{}}
+\toprule
+\textbf{Test} & \textbf{Producenci (P)} & \textbf{Bufory (B)} & \textbf{Konsumenci (K)} & \textbf{Czas [s]} \\ \midrule
+1 & 10 & 5 & 10 & 5 \\
+2 & 100 & 5 & 100 & 5 \\
+3 & 20 & 10 & 40 & 10 \\ \bottomrule
+\end{tabular}
+\end{table}
+
+\section{Wyniki eksperymentów}
+
+\subsection{Test 1: Mały system (10/5/10)}
+
+\begin{table}[H]
+\centering
+\caption{Wyniki testu 1}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Parametr} & \textbf{Wartość} \\ \midrule
+Czas rzeczywisty & 5030 ms \\
+Wyprodukowano elementów & 778~872 \\
+Skonsumowano elementów & 776~923 \\
+Przepustowość & 154~458 elem/s \\
+Średnia na bufor & 155~384,6 \\
+Odchylenie standardowe & 489,6 \\
+Współczynnik zmienności & 0,3\% \\ \bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Analiza:} System wykazał doskonałe równoważenie obciążenia z bardzo niskim współczynnikiem zmienności (0,3\%). Wszystkie bufory obsłużyły zbliżoną liczbę elementów (ok. 20\% każdy).
+
+\subsection{Test 2: Duży system (100/5/100)}
+
+\begin{table}[H]
+\centering
+\caption{Wyniki testu 2}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Parametr} & \textbf{Wartość} \\ \midrule
+Czas rzeczywisty & 5054 ms \\
+Wyprodukowano elementów & 2~611~174 \\
+Skonsumowano elementów & 2~611~093 \\
+Przepustowość & 516~639 elem/s \\
+Średnia na bufor & 522~218,6 \\
+Odchylenie standardowe & 783,6 \\
+Współczynnik zmienności & 0,2\% \\ \bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Analiza:} Przy zwiększeniu liczby producentów i konsumentów do 100, system osiągnął 3,3-krotnie wyższą przepustowość (516~639 elem/s) przy zachowaniu doskonałego równoważenia (0,2\%).
+
+\subsection{Test 3: Asymetryczny system (20/10/40)}
+
+\begin{table}[H]
+\centering
+\caption{Wyniki testu 3}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Parametr} & \textbf{Wartość} \\ \midrule
+Czas rzeczywisty & 10~052 ms \\
+Wyprodukowano elementów & 4~462~331 \\
+Skonsumowano elementów & 4~461~549 \\
+Przepustowość & 443~847 elem/s \\
+Średnia na bufor & 446~154,9 \\
+Odchylenie standardowe & 610,8 \\
+Współczynnik zmienności & 0,1\% \\ \bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Analiza:} System z większą liczbą konsumentów niż producentów oraz podwojoną liczbą buforów osiągnął najlepsze równoważenie (0,1\%). Każdy z 10 buforów obsłużył dokładnie 10\% elementów.
+
+\section{Analiza porównawcza}
+
+\subsection{Przepustowość systemu}
+
+\begin{table}[H]
+\centering
+\caption{Porównanie przepustowości}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Test} & \textbf{Przepustowość [elem/s]} & \textbf{Wzrost} & \textbf{P/K ratio} \\ \midrule
+Test 1 & 154~458 & - & 1,0 \\
+Test 2 & 516~639 & +234\% & 1,0 \\
+Test 3 & 443~847 & +187\% & 0,5 \\ \bottomrule
+\end{tabular}
+\end{table}
+
+Najwyższą przepustowość osiągnięto w teście 2 ze zrównoważoną liczbą producentów i konsumentów (100/100).
+
+\subsection{Równomierność obciążenia}
+
+\begin{table}[H]
+\centering
+\caption{Współczynniki zmienności}
+\begin{tabular}{@{}lccl@{}}
+\toprule
+\textbf{Test} & \textbf{Współczynnik [\%]} & \textbf{Liczba buforów} & \textbf{Ocena} \\ \midrule
+Test 1 & 0,3 & 5 & Doskonała \\
+Test 2 & 0,2 & 5 & Doskonała \\
+Test 3 & 0,1 & 10 & Doskonała \\ \bottomrule
+\end{tabular}
+\end{table}
+
+Wszystkie testy wykazały doskonałe równoważenie obciążenia (współczynnik < 10\%). Najlepszy wynik uzyskano w teście 3 z większą liczbą buforów.
+
+\section{Wnioski}
+
+\begin{enumerate}
+    \item \textbf{Skalowalność} - System efektywnie skaluje się wraz ze wzrostem liczby wątków. Test 2 (100 producentów/konsumentów) osiągnął ponad 3-krotnie wyższą przepustowość niż test 1.
+    
+    \item \textbf{Równoważenie obciążenia} - Mechanizm tablicy dispatcher zapewnia doskonałe rozłożenie obciążenia między bufory (współczynnik zmienności < 0,3\% we wszystkich testach).
+    
+    \item \textbf{Wpływ liczby buforów} - Zwiększenie liczby buforów z 5 do 10 poprawiło równomierność rozłożenia obciążenia (0,1\% vs 0,2-0,3\%).
+    
+    \item \textbf{Optymalna konfiguracja} - Zrównoważona liczba producentów i konsumentów (1:1) przy dużej liczbie wątków (test 2) zapewnia najwyższą przepustowość.
+    
+    \item \textbf{Stabilność} - System działa stabilnie we wszystkich konfiguracjach, różnica między wyprodukowanymi a skonsumowanymi elementami jest minimalna (<0,3\%).
+    
+    \item \textbf{Synchronizacja} - Zastosowane mechanizmy synchronizacji (AtomicInteger, BlockingQueue) zapewniają bezpieczną współbieżność bez deadlocków.
+\end{enumerate}
+
+\section{Możliwe usprawnienia}
+
+\begin{itemize}
+    \item Implementacja dynamicznego dostosowania liczby wątków w czasie działania
+    \item Priorytetyzacja buforów w zależności od obciążenia
+    \item Monitoring wydajności w czasie rzeczywistym
+    \item Optymalizacja strategii wyboru bufora przez producenta
+    \item Dodanie mechanizmu obsługi przeciążenia systemu
+\end{itemize}
+
+\section{Podsumowanie}
+
+Zaimplementowany system producent-konsument z tablicą dispatcher spełnia wszystkie założone cele. Wykazuje doskonałą skalowalność, efektywne równoważenie obciążenia oraz stabilność działania w różnych konfiguracjach. Przeprowadzone testy potwierdzają poprawność implementacji mechanizmów synchronizacji i możliwość wykorzystania systemu w aplikacjach wymagających wysokiej przepustowości.
+
+\end{document}
